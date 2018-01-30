@@ -34,9 +34,12 @@ class TodoListViewController: UITableViewController {
     
     //MARK: - Tableview Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+//        Removing code 
+//        context.delete(itemArray[indexPath.row])
+//        itemArray.remove(at: indexPath.row)
+        
         itemArray[indexPath.row].isDone = !itemArray[indexPath.row].isDone
-        self.saveItems()
-        tableView.reloadData()
+        saveItems()
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -61,7 +64,6 @@ class TodoListViewController: UITableViewController {
                 item.isDone = false
                 self.itemArray.append(item)
                 self.saveItems()
-                self.tableView.reloadData()
             }
         }
         
@@ -76,10 +78,10 @@ class TodoListViewController: UITableViewController {
         } catch{
             print("Error saving context \(error)")
         }
+        tableView.reloadData()
     }
     
-    func loadItems(){
-        let request:NSFetchRequest<Item> = Item.fetchRequest()
+    func loadItems(with request:NSFetchRequest<Item> = Item.fetchRequest()){
         do{
             itemArray = try context.fetch(request)
         }catch{
@@ -87,5 +89,24 @@ class TodoListViewController: UITableViewController {
         }
     }
     
-}
 
+}
+/* To do list */
+extension TodoListViewController:UISearchBarDelegate{
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request:NSFetchRequest<Item> = Item.fetchRequest()
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+        loadItems(with: request)
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
+    }
+}
