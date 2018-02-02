@@ -87,11 +87,13 @@ class TodoListViewController: UITableViewController {
         }catch{
             print("Error fetching data from context \(error)")
         }
+        
+        tableView.reloadData()
     }
-    
-
 }
-/* To do list */
+
+//MARK: - Search Bar Methods
+
 extension TodoListViewController:UISearchBarDelegate{
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         let request:NSFetchRequest<Item> = Item.fetchRequest()
