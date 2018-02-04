@@ -11,12 +11,18 @@ import CoreData
 
 class TodoListViewController: UITableViewController {
     var itemArray = [Item]()
+    
+    /*Here we load items only when we have real values for itemArray*/
+    var selectedCategory:Category?{
+        didSet{
+            loadItems()
+        }
+    }
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
-        loadItems()
     }
 
     //MARK: - Tableview Datasource Methods
@@ -34,16 +40,21 @@ class TodoListViewController: UITableViewController {
     
     //MARK: - Tableview Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        Removing code 
-//        context.delete(itemArray[indexPath.row])
-//        itemArray.remove(at: indexPath.row)
-        
         itemArray[indexPath.row].isDone = !itemArray[indexPath.row].isDone
         saveItems()
-        tableView.deselectRow(at: indexPath, animated: true)
+        
+        /* Select the current row after saving items */
+        tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition(rawValue: indexPath.row)!)
     }
     
-    //MARK: - Add new items
+    //MARK: - manipulate new items
+    @IBAction func removeItem(_ sender: UIBarButtonItem) {
+        if let indexpath = tableView.indexPathForSelectedRow {
+            context.delete(itemArray[indexpath.row])
+            itemArray.remove(at: indexpath.row)
+            saveItems()
+        }
+    }
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         var textField = UITextField()
@@ -59,11 +70,14 @@ class TodoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             //what will happen once the button "Add Item" is clicked.
             if let text = textField.text {
-                let item = Item(context: self.context)
-                item.title = text
-                item.isDone = false
-                self.itemArray.append(item)
-                self.saveItems()
+                if !text.isEmpty {
+                    let item = Item(context: self.context)
+                    item.title = text
+                    item.isDone = false
+                    item.parentCategory = self.selectedCategory
+                    self.itemArray.append(item)
+                    self.saveItems()
+                }
             }
         }
         
@@ -81,7 +95,16 @@ class TodoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    func loadItems(with request:NSFetchRequest<Item> = Item.fetchRequest()){
+    func loadItems(with request:NSFetchRequest<Item> = Item.fetchRequest(), predicate:NSPredicate? = nil){
+        
+        let loadPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", (selectedCategory?.name)!)
+        
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [loadPredicate, additionalPredicate])
+        }else{
+            request.predicate = loadPredicate
+        }
+        
         do{
             itemArray = try context.fetch(request)
         }catch{
@@ -97,10 +120,10 @@ class TodoListViewController: UITableViewController {
 extension TodoListViewController:UISearchBarDelegate{
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         let request:NSFetchRequest<Item> = Item.fetchRequest()
-        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        let searchPredicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
         request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
         
-        loadItems(with: request)
+        loadItems(with: request, predicate: searchPredicate)
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
