@@ -43,20 +43,37 @@ class TodoListViewController: UITableViewController {
     
     //MARK: - Tableview Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        itemArray?[indexPath.row].isDone = !itemArray[indexPath.row].isDone
-//        saveItems()
+        if let item = todoItems?[indexPath.row]{ //Here assigned reference, not a copy
+            do{
+                try realm.write {
+                    item.isDone = !(item.isDone)
+                }
+            }catch{
+                print("Error flipping over item.isdone, \(error)")
+            }
+        }
         
+        tableView.reloadData()
+
         /* Select the current row after saving items */
         tableView.selectRow(at: indexPath, animated: true, scrollPosition: UITableViewScrollPosition(rawValue: indexPath.row)!)
     }
     
     //MARK: - manipulate new items
     @IBAction func removeItem(_ sender: UIBarButtonItem) {
-//        if let indexpath = tableView.indexPathForSelectedRow {
-//            context.delete(todoItems[indexpath.row])
-//            todoItems.remove(at: indexpath.row)
-//            saveItems()
-//        }
+        if let indexpath = tableView.indexPathForSelectedRow {
+            if let item = todoItems?[indexpath.row]{
+                do{
+                    try realm.write{
+                        realm.delete(item)
+                    }
+                }catch{
+                    print("Error deleting item \(error)")
+                }
+                tableView.reloadData()
+            }
+
+        }
     }
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
