@@ -10,8 +10,9 @@ import UIKit
 import RealmSwift
 
 class TodoListViewController: UITableViewController {
-    var todoItems:Results<Item>?
     let realm = try! Realm()
+
+    var todoItems:Results<Item>?
     /*Here we load items only when we have real values for todoItems*/
     var selectedCategory:Category?{
         didSet{
